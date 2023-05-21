@@ -1,30 +1,65 @@
-#include "GL/freeglut.h"
+#include <GL/glut.h>
 #include <array>
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <ctime>
 
 using namespace std;
 
-const char N = 32, M = 38;
+
 
 struct Color {
     GLfloat r, g, b;
 };
 
 struct PolyType {
-    char type;
+    short type;
     float sx, sy, dx, dy;
     Color color;
 };
 
+struct Position{
+    GLfloat x, y;
+};
+
+struct Character{
+    short type;
+    Position pos;
+    bool isselect;
+    bool tomove;
+    bool toattack;
+
+    short cd;
+    short hp;
+    short atk;
+    short range;
+};
+
+Character
+    background={0, {0, 0}, false, false, false, 0, 0, 0, 0},
+    hexagone={0, {0, 0}, false, false, false, 0, 0, 0, 0},
+
+    warrior={1, {0, 0}, false, true, false, 0, 3, 2, 1},
+    enemy={2, {0, 0}, false, true, false, 0, 2, 2, 1};
+
+clock_t time_appStart, time_anim;
 
 
-void game();
+
+void RenderScene();
 void quad(PolyType poly);
-void setpolystat(PolyType& poly, char type, float sx, float sy, float dx, float dy, GLfloat r, GLfloat g, GLfloat b);
-void char1();
-void setcolorchar1(Color color[]);
-void char2();
-void setcolorchar2();
+void setpolystat(PolyType& poly, char type, float sx, float sy, float dx, float dy, Color c);
+
+void draw(Character &f, string a, string b, string c);
+void drawChar();
+void drawBG();
+void drawMenu();
+
+void animate(int value);
+void animofattack();
+
+void button(int button,int state,int x,int y);
 
 
 
@@ -32,153 +67,39 @@ int main(int argc, char* argv[])
 {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-    glutInitWindowPosition(100, 100);
-    glutInitWindowSize(800, 800);
+    glutInitWindowPosition(700, 70);
+    glutInitWindowSize(900, 900);
     glutCreateWindow("Game");
 
-    glutDisplayFunc(game);
+    time_appStart=clock();
+    time_anim=clock();
+
+    glutTimerFunc(1000/60, animate, 1);
+
+    glutMouseFunc(button);
+    glutDisplayFunc(RenderScene);
     glutMainLoop();
     return 0;
 }
 
-void game() {
+void RenderScene() {
+
     glClearColor(0.8, 0.8, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glLoadIdentity();
-    glTranslatef(-0.8, -0.8, 0);
-    glScalef(0.04, 0.04, 0);
-    char1();
+    glScalef(0.005, 0.005, 0);
+
+    drawBG();
+    drawChar();
 
     glutSwapBuffers();
 }
 
 
 
-void char1() {
-
-    Color color[13]{};
-    PolyType poly;
-    setcolorchar1(color);
-
-    char pict[N][M]{
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 8, 8, 8, 7, 7, 7, 7, 8, 1, 1, 1, 9, 9, 9, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 8, 8, 8, 7, 4, 4, 7, 3, 3, 3, 3, 7, 1, 8, 5, 5, 9, 9, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 8, 8, 8, 7, 3, 4, 4, 3, 7, 3, 3, 3, 7, 1, 8, 4, 4, 8, 5, 9, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 8, 5, 4, 7, 3, 3, 4, 7, 7, 7, 3, 3, 7, 1, 8, 4, 4, 8, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 4, 8, 7, 7, 3, 4, 4, 7, 3, 3, 3, 8, 1, 9, 4, 4, 4, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 4, 4, 8, 3, 3, 4, 4, 3, 4, 4, 4, 4, 1, 4, 4, 4, 4, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 4, 4, 3, 4, 4, 4, 4, 4, 3, 3, 3, 1, 4, 4, 4, 4, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 1, 4, 4, 4, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 5, 4, 4, 4, 4, 4, 4, 4, 8, 7, 7, 7, 7, 7, 7, 7, 7, 8, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 4, 4, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 1, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 8, 7, 7, 7, 7, 7, 7, 7, 7, 2, 2, 2, 2, 2, 2, 2, 7, 7, 7, 7, 8, 1, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 1, 1, 8, 8, 7, 7, 7, 7, 7, 2, 2, 2, 2, 2, 7, 1, 8, 8, 8, 8, 9, 7, 2, 7, 7, 7, 8, 1, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 1, 8, 8, 8, 7, 7, 7, 7, 2, 2, 7, 5, 5, 1, 1, 8, 8, 7, 7, 7, 7, 8, 9, 1, 8, 8, 7, 8, 1, 1, 0, 0, 0},
-        {0, 1, 1, 1, 1, 7, 7, 8, 7, 7, 7, 2, 8, 5, 5, 5, 5, 4, 1, 9, 8, 7, 7, 8, 2, 2, 7, 8, 5, 1, 8, 8, 8, 9, 9, 1, 1, 0},
-        {1, 8, 8, 7, 7, 7, 7, 8, 7, 8, 9, 5, 5, 5, 5, 4, 4, 4, 1, 9, 8, 7, 7, 7, 7, 7, 7, 7, 6, 5, 9, 8, 8, 8, 8, 8, 9, 1},
-        {0, 1, 1, 8, 8, 7, 8, 8, 9, 1, 5, 5, 5, 5, 4, 4, 4, 3, 3, 9, 8, 7, 7, 7, 8, 8, 7, 7, 6, 6, 5, 9, 8, 8, 8, 1, 1, 0},
-        {0, 0, 0, 1, 9, 8, 8, 9, 1, 5, 5, 5, 5, 4, 4, 4, 3, 3, 3, 3, 8, 8, 7, 7, 8, 2, 7, 7, 6, 6, 5, 9, 8, 1, 1, 0, 0, 0},
-        {0, 0, 0, 1, 9, 8, 9, 1, 1, 5, 5, 5, 4, 9, 4, 4, 4, 3, 3, 4, 4, 1, 1, 1, 8, 2, 1, 1, 6, 6, 5, 8, 1, 0, 0, 0, 0, 0},
-        {0, 0, 0, 1, 9, 9,10, 1, 1, 5, 5, 4, 4, 4, 9, 9, 4, 4, 4, 4, 7, 3, 3, 1, 8, 7, 1, 1, 6, 6, 5, 1, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 1, 9,10,10,10, 1, 5, 5, 4, 4, 4, 9, 9, 9, 8, 8, 7, 3, 3, 3, 3, 7, 2, 2, 7, 6, 4, 5, 1, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 1, 9,10,10,10,10,10, 5, 4, 4, 4, 4, 9,12,12,11, 7, 3, 3, 3, 3, 3, 7, 7, 3, 3, 4, 5, 1, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 1, 9,10,10,10,10, 5, 4, 4, 4, 4, 8,12, 7,11, 7, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 1, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 1, 9, 9,10,10, 5, 5, 4, 4, 4, 9,12,11,12, 8, 4, 3, 3, 3, 3, 3, 3, 3, 3, 4, 1, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 1, 1, 9, 9, 5, 5, 5, 4, 4, 8, 8, 7, 7, 7, 7, 3, 3, 3, 3, 3, 3, 3, 3, 4, 1, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 5, 4, 3, 4, 8, 3, 3, 3, 3, 7, 7, 5, 3, 3, 3, 3, 3, 3, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 7, 3, 3, 3, 3, 3, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 3, 3, 3, 3, 3, 4, 4, 4, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-    };
-        
-    for (int i = 0; i < M; i++) {
-        for (int j = 0; j < N; j++) {
-            if (pict[j][i] != 0) {
-                glPushMatrix();
-                glTranslatef(i, j, 0);
-                setpolystat(poly, 0.1, 0.1, 0, 1, 1, color[pict[j][i]].r, color[pict[j][i]].g, color[pict[j][i]].b);
-                quad(poly);
-                glPopMatrix();
-            }
-        }
-    }
-}
-
-void setcolorchar1(Color color[]) {
-    //чёрный
-    color[1].r = 0;
-    color[1].g = 0;
-    color[1].b = 0;
-    //белый
-    color[2].r = 1;
-    color[2].g = 1;
-    color[2].b = 1;
-    //бежевый
-    color[3].r = 1;
-    color[3].g = 0.976;
-    color[3].b = 0.741;
-
-    color[4].r = 0.698;
-    color[4].g = 0.682;
-    color[4].b = 0.518;
-
-    color[5].r = 0.486;
-    color[5].g = 0.475;
-    color[5].b = 0.361;
-
-    color[6].r = 0.341;
-    color[6].g = 0.329;
-    color[6].b = 0.251;
-    //жёлтый
-    color[7].r = 1;
-    color[7].g = 0.949;
-    color[7].b = 0;
-
-    color[8].r = 0.698;
-    color[8].g = 0.663;
-    color[8].b = 0;
-
-    color[9].r = 0.486;
-    color[9].g = 0.463;
-    color[9].b = 0;
-
-    color[10].r = 0.341;
-    color[10].g = 0.322;
-    color[10].b = 0;
-    //синий
-    color[11].r = 0.6;
-    color[11].g = 0.851;
-    color[11].b = 0.918;
-
-    color[12].r = 0.42;
-    color[12].g = 0.592;
-    color[12].b = 0.639;
-}
-
-void char2() {
-
-}
-
-void setcolorchar2() {
-
-}
-
-void setpolystat(PolyType& poly, char type, float sx, float sy, float dx, float dy, GLfloat r, GLfloat g, GLfloat b) {
-    poly.sx = sx;
-    poly.sy = sy;
-    poly.dx = dx;
-    poly.dy = dy;
-    poly.color.r = r;
-    poly.color.g = g;
-    poly.color.b = b;
-}
-
 void quad(PolyType poly) {
+    glPushMatrix();
     glBegin(GL_QUADS);
         glColor3f(poly.color.r, poly.color.g, poly.color.b);
 
@@ -190,4 +111,156 @@ void quad(PolyType poly) {
         poly.sx -= poly.dx;
         glVertex2f(poly.sx, poly.sy);
     glEnd();
+    glPopMatrix();
+}
+
+void setpolystat(PolyType& poly, char type, float sx, float sy, float dx, float dy, Color c) {
+    poly.type=type;
+    poly.sx=sx;
+    poly.sy=sy;
+    poly.dx=dx;
+    poly.dy=dy;
+    poly.color = c;
+}
+
+
+
+void draw(Character &f, string fparam, string fcolor, string fpict) {
+
+    fstream fin;
+    short i=0;
+    PolyType poly;
+    short int width, heigh, numcol;
+
+    fin.open(fparam, ios::in);
+    if (!fin.is_open()) cout<<"err open char1/param";
+        fin>>width;
+        fin>>heigh;
+        fin>>numcol;
+    fin.close();
+
+    Color color[numcol+1];
+
+    fin.open(fcolor, ios::in);
+    if (!fin.is_open()) cout<<"err open char1/color";
+    i=1;
+    while (i<numcol+1){
+        fin>>color[i].r;
+        fin>>color[i].g;
+        fin>>color[i].b;
+        i++;
+    }
+    fin.close();
+
+    int pict[heigh][width];
+
+    fin.open(fpict, ios::in);
+    if (!fin.is_open()) cout<<"err open char1/pict";
+    i=0;
+    while (i<heigh){
+        int j=0;
+        while (j<width){
+            fin>>pict[i][j];
+            j++;
+        }
+        i++;
+    }
+    fin.close();
+
+
+    for (int i = 0; i < width; i++) {
+        for (int j = 0; j < heigh; j++) {
+            if (pict[j][i] != 0) {
+                glPushMatrix();
+                glTranslatef(i-(heigh/2)+f.pos.x, j-(width/2)+f.pos.y, 0);
+                setpolystat(poly, 0, 0, 0, 1, 1, color[pict[j][i]]);
+                quad(poly);
+                glPopMatrix();
+            }
+        }
+    }
+}
+
+void drawChar(){
+    animofattack();
+
+    draw(warrior, "sprites/char1/param.txt", "sprites/char1/color.txt", "sprites/char1/pict.txt");
+}
+
+void drawBG(){
+    int x=-34, y=4, width=5, heigh=3;
+
+    glPushMatrix();
+    glScalef(4, 4, 1);
+    draw(background, "sprites/bg/main/param.txt", "sprites/bg/main/color.txt", "sprites/bg/main/pict.txt");
+    glPopMatrix();
+
+    Character hexagone[100][100];
+
+    for (int i=0; i<width*2; i+=2){
+        for (int j=0; j<heigh*2; j+=2){
+            glPushMatrix();
+            glScalef(5, 5, 1);
+            glTranslatef(x+i*8, y+j*-5, 0);
+            draw(hexagone[i][j], "sprites/hex/empty/param.txt", "sprites/hex/empty/color.txt", "sprites/hex/empty/pict.txt");
+            hexagone[i][j].pos.x=x;
+            hexagone[i][j].pos.y=y;
+            glPopMatrix();
+        }
+    }
+
+    width-=1;
+    heigh-=1;
+
+    for (int i=1; i<width*2; i+=2){
+        for (int j=1; j<heigh*2; j+=2){
+            glPushMatrix();
+            glScalef(5, 5, 1);
+            glTranslatef(x+i*8, y+j*-5, 0);
+            draw(hexagone[i][j], "sprites/hex/empty/param.txt", "sprites/hex/empty/color.txt", "sprites/hex/empty/pict.txt");
+            glPopMatrix();
+        }
+    }
+}
+
+void drawMenu(){
+
+}
+
+
+
+void animate(int value){
+    glutPostRedisplay();
+    glutTimerFunc(1000/60, animate, value);
+}
+
+void animofattack(){
+    clock_t cT=clock()-time_appStart-time_anim;
+    float x, y;
+
+    if(warrior.toattack){
+        if (cT<1000){
+            y=0;
+            x=0+(40.0-0)/(1000-0)*cT;
+        }else{
+            if(cT<3000){
+                x=0+(40.0-0)/(1000-0)*1000;
+                y=0;
+            }else{
+                    time_anim=clock();
+                    warrior.toattack=false;
+                }
+            }
+        }
+        glTranslatef(x, y, 0);
+}
+
+
+
+void button(int button, int state, int x, int y){
+    if (button == GLUT_RIGHT_BUTTON){
+        if (state == GLUT_DOWN) {
+            warrior.toattack=true;
+        }
+    }
 }
